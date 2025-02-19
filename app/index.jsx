@@ -22,17 +22,17 @@ const Input = ({ value, onChangeText, placeholder }) => (
 
 const Home = () => {
   const [count, setCount] = useState(0);
-  const [num1, setNum1] = useState("");
-  const [num2, setNum2] = useState("");
+  const [inputs, setInputs] = useState([{ id: 0, num1: "", num2: "" }]);
   const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
 
   const increment = () => setCount(count + 1);
-  const decrement = () => setCount(count - 1);
+  const decrement = () => setCount(prevCount => (prevCount > 0 ? prevCount - 1 : 0));
   const reset = () => setCount(0);
 
-  const calculate = (operator) => {
-    const n1 = parseFloat(num1);
-    const n2 = parseFloat(num2);
+  const calculate = (operator, index) => {
+    const n1 = parseFloat(inputs[index].num1);
+    const n2 = parseFloat(inputs[index].num2);
     if (isNaN(n1) || isNaN(n2)) {
       setResult("Invalid input");
       return;
@@ -43,6 +43,16 @@ const Home = () => {
       case "*": setResult(n1 * n2); break;
       case "/": setResult(n2 !== 0 ? n1 / n2 : "Cannot divide by zero"); break;
       default: setResult(null);
+    }
+  };
+
+  const addInput = () => {
+    setInputs([...inputs, { id: inputs.length, num1: "", num2: "" }]);
+  };
+
+  const undoInput = () => {
+    if (inputs.length > 1) {
+      setInputs(inputs.slice(0, -1));
     }
   };
 
@@ -62,13 +72,29 @@ const Home = () => {
       {/* Calculator */}
       <View style={styles.card}>
         <Text style={styles.title}>Calculator</Text>
-        <Input value={num1} onChangeText={setNum1} placeholder="Enter first number" />
-        <Input value={num2} onChangeText={setNum2} placeholder="Enter second number" />
+        {inputs.map((input, index) => (
+          <View key={input.id}>
+            <Input value={input.num1} onChangeText={text => {
+              const newInputs = [...inputs];
+              newInputs[index].num1 = text;
+              setInputs(newInputs);
+            }} placeholder="Enter first number" />
+            <Input value={input.num2} onChangeText={text => {
+              const newInputs = [...inputs];
+              newInputs[index].num2 = text;
+              setInputs(newInputs);
+            }} placeholder="Enter second number" />
+            <View style={styles.buttonGroup}>
+              <Button onPress={() => calculate("+", index)} title="+" />
+              <Button onPress={() => calculate("-", index)} title="-" />
+              <Button onPress={() => calculate("*", index)} title="*" />
+              <Button onPress={() => calculate("/", index)} title="/" />
+            </View>
+          </View>
+        ))}
         <View style={styles.buttonGroup}>
-          <Button onPress={() => calculate("+")} title="+" />
-          <Button onPress={() => calculate("-")} title="-" />
-          <Button onPress={() => calculate("*")} title="*" />
-          <Button onPress={() => calculate("/")} title="/" />
+          <Button onPress={addInput} title="Add Input" />
+          <Button onPress={undoInput} title="Undo Input" variant="destructive" />
         </View>
         <Text style={styles.result}>Result: {result !== null ? result : "-"}</Text>
       </View>
@@ -110,6 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 10,
+    justifyContent: 'space-between',
   },
   button: {
     backgroundColor: '#007bff',
@@ -127,7 +154,7 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     padding: 10,
-    borderWidth: 1,
+    borderWidth: 1, 
     borderColor: '#ccc',
     borderRadius: 5,
     marginBottom: 10,
